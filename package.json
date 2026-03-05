@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "postinstall": "patch-package",
-    "start": "node packages/playwright-mcp/cli.js --output-dir .",
+    "start": "node packages/playwright-mcp/cli.js --output-dir .mcp-output",
     "start:mcp": "node packages/playwright-mcp/cli.js",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",

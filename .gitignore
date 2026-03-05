@@ -6,3 +6,7 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+
+# MCP output (console logs, screenshots, etc.)
+.mcp-output/
+console-*.log

@@ -77,12 +77,14 @@ npx playwright install chromium
       "args": [
         "/path/to/mario-playwright-mcp/packages/playwright-mcp/cli.js",
         "--output-dir",
-        "."
+        ".mcp-output"
       ]
     }
   }
 }
 ```
+
+Output (console logs, screenshots, etc.) goes to `.mcp-output/` in the workspace. Add `.mcp-output/` to `.gitignore` to keep the repo clean.
 
 **Generic config** (VS Code, Claude Desktop, etc.) — use `node` + path to `cli.js` as above.
 
