@@ -1,5 +1,6 @@
 # Playwright MCP Mario
 
+[![version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/mariocosttaa/mario-playwright-mcp/releases)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-MCP-2DAD76?logo=playwright)](https://playwright.dev/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -207,6 +208,16 @@ If Playwright version changes and the patch fails, re-apply changes in `node_mod
 - MCP client (Cursor, VS Code, Claude Desktop, Goose, etc.)
 
 For client-specific configs (Amp, Cline, LM Studio, etc.) and CLI options, see the [upstream README](https://github.com/microsoft/playwright-mcp).
+
+---
+
+## Versioning
+
+- **main** — development branch
+- **1.1** — first Mario fork release (network payload capture, .mcp-output, etc.)
+- **1.2, 1.3, …** — future releases as changes land
+
+Use semantic versioning: patch for fixes (1.1.1), minor for features (1.2.0).
 
 ---
 

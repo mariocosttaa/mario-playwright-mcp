@@ -1,6 +1,6 @@
 {
   "name": "mario-playwright-mcp",
-  "version": "0.0.68",
+  "version": "1.1.0",
   "description": "Playwright MCP for QA Agent — network payload capture, screenshots to workspace",
   "private": true,
   "repository": {
