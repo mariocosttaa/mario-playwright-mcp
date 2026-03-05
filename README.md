@@ -14,44 +14,39 @@
 An MCP server that lets LLMs control a browser through accessibility snapshots (no vision models needed). This fork adds **network payload capture** and **sensitive redaction** — better for API debugging and QA.
 
 ```mermaid
-flowchart TB
-    subgraph Agent["🤖 AI Agent"]
-        A[LLM]
+flowchart LR
+    subgraph Card1["1- Default Playwright"]
+        D1[Microsoft upstream]
     end
 
-    subgraph MCP["Playwright MCP Mario"]
-        subgraph Page["📄 Page & Output"]
-            P1[snapshot]
-            P2[screenshot]
-            P3[console]
-            P4[PDF]
+    subgraph Card2["2- Mario Playwright"]
+        D2[network payloads · redaction]
+    end
+
+    subgraph Card3["3- Mario agent skills"]
+        D3[qa-agent · QA workflows]
+    end
+
+    subgraph Runtime[runtime]
+        direction LR
+        subgraph BrowserCard["4- Browser"]
+            Browser[Chromium]
         end
-        subgraph Actions["🖱️ Actions"]
-            P5[navigate · click · type<br>fill_form · hover · drag]
-        end
-        subgraph Network["🌐 Network ✨ ours"]
-            P6[headers + bodies<br>url filter · redaction]
+        subgraph ToolsCard["5- Tools"]
+            T1[navigate]
+            T2[click · type]
+            T3[snapshot · screenshot]
+            T4[network ++]
         end
     end
 
-    subgraph Browser["🌍 Browser"]
-        B1[page]
-        B2[requests]
-        B3[logs]
-    end
-
-    A --> MCP
-    MCP --> Browser
-    P1 --> B1
-    P2 --> B1
-    P4 --> B1
-    P6 --> B2
-    P3 --> B3
+    Card1 --> Card2 --> Card3 --> Runtime
+    BrowserCard --> ToolsCard
 ```
 
-**Inside the browser** — The MCP reads page content (accessibility snapshot, screenshots), console messages, and network traffic. It can navigate, click, type, fill forms, and more.
-
-**Mario vs upstream** — Upstream `browser_network_requests` returns only `[POST] url => [200]`. Mario adds `includePayloads` (headers + bodies), `url` filter to drill into specific endpoints, and auto-redacts `password`, `token`, `cookie`, etc.
+- **MCP** = bridge that controls the browser and returns snapshots, screenshots, console, network.
+- **Recommended:** [qa-agent](https://github.com/mariocosttaa/my-agent-skills/tree/main/qa-agent) skill for QA workflows.
+- **Mario vs upstream:** full payloads, URL filter, sensitive redaction — not just `[POST] url => [200]`.
 
 ---
 
