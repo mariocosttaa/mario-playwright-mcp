@@ -1,6 +1,7 @@
 {
-  "name": "playwright-mcp-internal",
+  "name": "mario-playwright-mcp",
   "version": "0.0.68",
+  "description": "Playwright MCP for QA Agent — network payload capture, screenshots to workspace",
   "private": true,
   "repository": {
     "type": "git",
@@ -12,6 +13,9 @@
   },
   "license": "Apache-2.0",
   "scripts": {
+    "postinstall": "patch-package",
+    "start": "node packages/playwright-mcp/cli.js --output-dir .",
+    "start:mcp": "node packages/playwright-mcp/cli.js",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
@@ -27,6 +31,7 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@playwright/test": "1.59.0-alpha-1771104257000",
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "patch-package": "^8.0.1"
   }
 }

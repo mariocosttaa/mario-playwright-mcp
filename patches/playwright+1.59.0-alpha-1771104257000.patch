@@ -1,0 +1,151 @@
+diff --git a/node_modules/playwright/lib/mcp/browser/tools/network.js b/node_modules/playwright/lib/mcp/browser/tools/network.js
+index a3930fc..2f5c291 100644
+--- a/node_modules/playwright/lib/mcp/browser/tools/network.js
++++ b/node_modules/playwright/lib/mcp/browser/tools/network.js
+@@ -25,14 +25,79 @@ __export(network_exports, {
+ module.exports = __toCommonJS(network_exports);
+ var import_mcpBundle = require("playwright-core/lib/mcpBundle");
+ var import_tool = require("./tool");
++
++// Sensitive header/body keys to redact in output
++const SENSITIVE_KEYS = /\b(password|token|secret|authorization|cookie|api[_-]?key)\b/i;
++
++function redactObject(obj, depth) {
++  if (depth > 10)
++    return "[max depth]";
++  if (obj === null || obj === undefined)
++    return obj;
++  if (typeof obj !== "object")
++    return obj;
++  if (Array.isArray(obj))
++    return obj.map((v) => redactObject(v, depth + 1));
++  const out = {};
++  for (const [k, v] of Object.entries(obj)) {
++    if (SENSITIVE_KEYS.test(k))
++      out[k] = "***";
++    else
++      out[k] = redactObject(v, depth + 1);
++  }
++  return out;
++}
++
++function formatHeaders(headers) {
++  if (!headers || typeof headers !== "object")
++    return "{}";
++  const obj = typeof headers === "function" ? headers() : headers;
++  const filtered = {};
++  for (const [k, v] of Object.entries(obj)) {
++    const key = String(k).toLowerCase();
++    if (SENSITIVE_KEYS.test(key))
++      filtered[key] = "***";
++    else if (v != null)
++      filtered[key] = String(v).length > 200 ? String(v).slice(0, 200) + "..." : String(v);
++  }
++  return JSON.stringify(filtered, null, 2);
++}
++
++async function safeResponseBody(response, maxSize) {
++  try {
++    const contentType = (response.headers()["content-type"] || "").toLowerCase();
++    const buf = await response.body();
++    if (!buf || buf.length === 0)
++      return "";
++    if (buf.length > maxSize)
++      return `[truncated, ${buf.length} bytes, first ${maxSize} shown]\n${buf.slice(0, maxSize).toString("utf8", 0, maxSize)}`;
++    if (contentType.includes("json")) {
++      try {
++        const parsed = JSON.parse(buf.toString("utf8"));
++        return JSON.stringify(redactObject(parsed, 0), null, 2);
++      } catch {
++        return buf.toString("utf8", 0, maxSize);
++      }
++    }
++    if (contentType.includes("text") || contentType.includes("html") || contentType.includes("xml"))
++      return buf.toString("utf8", 0, maxSize);
++    return `[binary, ${buf.length} bytes, content-type: ${contentType}]`;
++  } catch (e) {
++    return `[unable to read body: ${e?.message || "unknown"}]`;
++  }
++}
++
+ const requests = (0, import_tool.defineTabTool)({
+   capability: "core",
+   schema: {
+     name: "browser_network_requests",
+     title: "List network requests",
+-    description: "Returns all network requests since loading the page",
++    description: "Returns all network requests since loading the page. Use includePayloads for headers and bodies, or url to filter and get details for a specific request.",
+     inputSchema: import_mcpBundle.z.object({
+       includeStatic: import_mcpBundle.z.boolean().default(false).describe("Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false."),
++      includePayloads: import_mcpBundle.z.boolean().default(false).describe("When true, include request/response headers and bodies for each request. Use with url to get full details for one request."),
++      url: import_mcpBundle.z.string().optional().describe("Filter by URL: only return requests whose URL contains this string. Useful to get headers and body for a specific API call (e.g. '/login', '/api/users')."),
++      maxBodySize: import_mcpBundle.z.number().default(51200).describe("Max response body size in bytes when includePayloads is true. Default 51200 (50KB)."),
+       filename: import_mcpBundle.z.string().optional().describe("Filename to save the network requests to. If not provided, requests are returned as text.")
+     }),
+     type: "readOnly"
+@@ -40,12 +105,15 @@ const requests = (0, import_tool.defineTabTool)({
+   handle: async (tab, params, response) => {
+     const requests2 = await tab.requests();
+     const text = [];
++    const urlFilter = params.url ? params.url.trim().toLowerCase() : null;
+     for (const request of requests2) {
+       if (!params.includeStatic && !isFetch(request) && isSuccessfulResponse(request))
+         continue;
+-      text.push(await renderRequest(request));
++      if (urlFilter && !request.url().toLowerCase().includes(urlFilter))
++        continue;
++      text.push(await renderRequest(request, params.includePayloads, params.maxBodySize));
+     }
+-    await response.addResult("Network", text.join("\n"), { prefix: "network", ext: "log", suggestedFilename: params.filename });
++    await response.addResult("Network", text.join("\n\n"), { prefix: "network", ext: "log", suggestedFilename: params.filename });
+   }
+ });
+ const networkClear = (0, import_tool.defineTabTool)({
+@@ -71,7 +139,7 @@ function isSuccessfulResponse(request) {
+ function isFetch(request) {
+   return ["fetch", "xhr"].includes(request.resourceType());
+ }
+-async function renderRequest(request) {
++async function renderRequest(request, includePayloads, maxBodySize) {
+   const response = request.existingResponse();
+   const result = [];
+   result.push(`[${request.method().toUpperCase()}] ${request.url()}`);
+@@ -79,7 +147,37 @@ async function renderRequest(request) {
+     result.push(`=> [${response.status()}] ${response.statusText()}`);
+   else if (request.failure())
+     result.push(`=> [FAILED] ${request.failure()?.errorText ?? "Unknown error"}`);
+-  return result.join(" ");
++  if (includePayloads) {
++    // Request headers
++    result.push("  Request headers: " + formatHeaders(request.headers()));
++    // Request body
++    const postData = request.postData();
++    if (postData) {
++      try {
++        const contentType = (request.headers()["content-type"] || "").toLowerCase();
++        if (contentType.includes("json")) {
++          const parsed = JSON.parse(postData);
++          result.push("  Request body: " + JSON.stringify(redactObject(parsed, 0)));
++        } else if (contentType.includes("form-urlencoded")) {
++          const entries = {};
++          for (const [k, v] of new URLSearchParams(postData).entries())
++            entries[k] = SENSITIVE_KEYS.test(k) ? "***" : v;
++          result.push("  Request body: " + JSON.stringify(entries));
++        } else
++          result.push("  Request body: " + (postData.length > 500 ? postData.slice(0, 500) + "..." : postData));
++      } catch {
++        result.push("  Request body: " + (postData.length > 500 ? postData.slice(0, 500) + "..." : postData));
++      }
++    } else
++      result.push("  Request body: (none)");
++    // Response headers and body
++    if (response) {
++      result.push("  Response headers: " + formatHeaders(response.headers()));
++      const body = await safeResponseBody(response, maxBodySize || 51200);
++      result.push("  Response body: " + (body || "(empty)"));
++    }
++  }
++  return result.join("\n");
+ }
+ var network_default = [
+   requests,
