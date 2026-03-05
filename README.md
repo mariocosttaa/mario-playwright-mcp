@@ -93,6 +93,10 @@ Output (console logs, screenshots, etc.) goes to `.mcp-output/` in the workspace
 
 Open a project, start a chat, and use tools like `browser_navigate`, `browser_snapshot`, `browser_network_requests`.
 
+### QA Agent skill (recommended)
+
+For QA workflows and structured test reports, use the **[qa-agent](https://github.com/mariocosttaa/my-agent-skills/tree/main/qa-agent)** skill — an agent skill for QA engineers that uses this MCP for browser testing, post-action analysis (console + network), and evidence capture.
+
 ---
 
 ## Tools
@@ -116,7 +120,7 @@ All tools the Playwright MCP exposes. ✨ = **Mario-enhanced** (better in this f
 | `browser_fill_form` | Fill multiple form fields |
 | `browser_select_option` | Select dropdown option |
 | `browser_press_key` | Press a key |
-| `browser_resize` | Resize window |
+| `browser_resize` | Set viewport size — browser opens at native resolution by default; use to test Mobile (375×667), Tablet (768×1024), Desktop (1920×1080) |
 | `browser_evaluate` | Run JavaScript on the page |
 | `browser_run_code` | Run Playwright code snippet |
 | `browser_file_upload` | Upload files |
